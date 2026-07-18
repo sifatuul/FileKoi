@@ -184,6 +184,17 @@ input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px 
 // IMPORTANT: Replace with your new Google Apps Script URL
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwL3dYf9c9j5CWhma8s3Gip3gsN98uLxpSBps5yCjY6FSEl_VmaWS245OKVjHjRU2_4/exec"; 
 
+// Helper function to extract Google Drive File ID
+function extractFileId(url) {
+    const matchD = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (matchD) return matchD[1];
+    
+    const matchId = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (matchId) return matchId[1];
+    
+    return null;
+}
+
 async function loadData() {
     try {
         const response = await fetch(SCRIPT_URL);
@@ -246,9 +257,20 @@ function renderGrid(data) {
 async function addFile() {
     const title = document.getElementById('fileTitle').value.trim();
     const link = document.getElementById('fileLink').value.trim();
+    let thumbInput = document.getElementById('fileThumb').value.trim();
     
     if (!title || !link) { alert("Title and Link are required."); return; }
     
+    // Auto-convert Google Drive links for the thumbnail
+    let finalThumbUrl = thumbInput;
+    if (thumbInput) {
+        const fileId = extractFileId(thumbInput);
+        if (fileId) {
+            // It's a Google Drive link, convert to thumbnail format
+            finalThumbUrl = `https://drive.google.com/thumbnail?id=${fileId}&sz=w500`;
+        }
+    }
+
     const pass = prompt('Enter Admin Password:');
     if (!pass) return;
 
@@ -261,7 +283,7 @@ async function addFile() {
         id: Date.now().toString(),
         title: title,
         link: link,
-        thumb: document.getElementById('fileThumb').value.trim(),
+        thumb: finalThumbUrl, // Saving the processed thumbnail URL
         uploader: document.getElementById('uploaderName').value,
         tag: document.getElementById('fileCategory').value,
         desc: document.getElementById('fileDesc').value,
